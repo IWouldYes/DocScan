@@ -22,6 +22,11 @@ import numpy as np
 import pytesseract
 from PIL import Image, ImageOps, ImageTk
 
+try:
+    from build_info import BUILD
+except ImportError:
+    BUILD = "dev"
+
 BG = "#17181c"
 ACCENT = "#4f8cff"
 IS_WIN = sys.platform.startswith("win")
@@ -501,7 +506,7 @@ class App(ctk.CTk):
         super().__init__()
         ctk.set_appearance_mode("dark")
         ctk.set_default_color_theme("blue")
-        self.title("DocScan")
+        self.title(f"DocScan ({BUILD})")
         self.geometry("1280x800")
         self.minsize(960, 600)
 
