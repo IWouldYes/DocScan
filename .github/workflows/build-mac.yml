@@ -1,0 +1,35 @@
+name: Build macOS app
+on:
+  workflow_dispatch:
+  push:
+    tags: ["v*"]
+jobs:
+  mac:
+    runs-on: macos-14   # Apple Silicon (M1/M2/M3...)
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Tesseract + biblioteki do paczki
+        run: |
+          brew install tesseract dylibbundler
+          mkdir -p build_tess/libs build_tess/tessdata
+          cp "$(brew --prefix tesseract)/bin/tesseract" build_tess/tesseract
+          dylibbundler -od -b -x build_tess/tesseract -d build_tess/libs -p @executable_path/libs/
+          curl -L -o build_tess/tessdata/eng.traineddata https://github.com/tesseract-ocr/tessdata_fast/raw/main/eng.traineddata
+          curl -L -o build_tess/tessdata/pol.traineddata https://github.com/tesseract-ocr/tessdata_fast/raw/main/pol.traineddata
+      - name: Build .app
+        run: |
+          pip install -r requirements.txt pyinstaller
+          pyinstaller --noconfirm --windowed --name DocScan \
+            --osx-bundle-identifier pl.docscan.app \
+            --collect-data customtkinter \
+            --add-data "build_tess:tesseract" docscan.py
+          /usr/libexec/PlistBuddy -c "Add :NSCameraUsageDescription string DocScan uzywa kamery do skanowania dokumentow" dist/DocScan.app/Contents/Info.plist
+          codesign --force --deep -s - dist/DocScan.app
+          ditto -c -k --keepParent dist/DocScan.app DocScan-mac.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: DocScan-mac
+          path: DocScan-mac.zip
