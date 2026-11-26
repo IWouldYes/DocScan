@@ -19,12 +19,18 @@ jobs:
           dylibbundler -od -b -x build_tess/tesseract -d build_tess/libs -p @executable_path/libs/
           curl -L -o build_tess/tessdata/eng.traineddata https://github.com/tesseract-ocr/tessdata_fast/raw/main/eng.traineddata
           curl -L -o build_tess/tessdata/pol.traineddata https://github.com/tesseract-ocr/tessdata_fast/raw/main/pol.traineddata
+      - name: Weryfikacja źródeł
+        run: |
+          git log -1 --oneline
+          ls
+          grep -c "class Database" docscan.py
+          echo "BUILD = '${GITHUB_SHA::7}'" > build_info.py
       - name: Build .app
         run: |
           pip install -r requirements.txt pyinstaller
           pyinstaller --noconfirm --windowed --name DocScan \
             --osx-bundle-identifier pl.docscan.app \
-            --collect-data customtkinter \
+            --collect-data customtkinter --hidden-import PIL._tkinter_finder \
             --add-data "build_tess:tesseract" docscan.py
           /usr/libexec/PlistBuddy -c "Add :NSCameraUsageDescription string DocScan uzywa kamery do skanowania dokumentow" dist/DocScan.app/Contents/Info.plist
           codesign --force --deep -s - dist/DocScan.app
@@ -51,11 +57,17 @@ jobs:
           cp -r "/c/Program Files/Tesseract-OCR/." build_tess/
           curl -L -o build_tess/tessdata/pol.traineddata https://github.com/tesseract-ocr/tessdata_fast/raw/main/pol.traineddata
           ls build_tess/tessdata
+      - name: Weryfikacja źródeł
+        run: |
+          git log -1 --oneline
+          ls
+          grep -c "class Database" docscan.py
+          echo "BUILD = '${GITHUB_SHA::7}'" > build_info.py
       - name: Build exe
         run: |
           pip install -r requirements.txt pyinstaller
           pyinstaller --noconfirm --windowed --name DocScan \
-            --collect-data customtkinter \
+            --collect-data customtkinter --hidden-import PIL._tkinter_finder \
             --add-data "build_tess;tesseract" docscan.py
           cd dist && 7z a -tzip ../DocScan-windows.zip DocScan
       - uses: actions/upload-artifact@v4
@@ -72,11 +84,17 @@ jobs:
           python-version: "3.12"
       - name: Zależności systemowe
         run: sudo apt-get update && sudo apt-get install -y libgl1 libtk8.6
+      - name: Weryfikacja źródeł
+        run: |
+          git log -1 --oneline
+          ls
+          grep -c "class Database" docscan.py
+          echo "BUILD = '${GITHUB_SHA::7}'" > build_info.py
       - name: Build
         run: |
           pip install -r requirements.txt pyinstaller
           pyinstaller --noconfirm --onefile --windowed --name DocScan \
-            --collect-data customtkinter docscan.py
+            --collect-data customtkinter --hidden-import PIL._tkinter_finder docscan.py
           tar -czf DocScan-linux.tar.gz -C dist DocScan
       - uses: actions/upload-artifact@v4
         with:
